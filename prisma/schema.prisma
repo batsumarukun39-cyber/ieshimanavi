@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Category {
+  RESTAURANT
+  CAFE
+  SHOP
+  SIGHT
+  LODGING
+  ONSEN
+  TOILET
+  PORT
+  OTHER
+}
+
+enum StatusState {
+  OPEN
+  CLOSED
+  BREAK
+}
+
+model Place {
+  id            String           @id @default(cuid())
+  slug          String           @unique
+  category      Category
+  nameJa        String
+  nameEn        String?
+  descriptionJa String?
+  descriptionEn String?
+  lat           Float
+  lng           Float
+  address       String?
+  phone         String?
+  photos        String           @default("[]") // JSON文字列(画像パスの配列)
+  openingHours  String           @default("{}") // JSON: 曜日→[{open:"11:00",close:"15:00"}]
+  hasStatus     Boolean          @default(false)
+  island        String           @default("家島本島")
+  status        StoreStatus?
+  credential    StoreCredential?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model StoreStatus {
+  id          String      @id @default(cuid())
+  placeId     String      @unique
+  place       Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  state       StatusState @default(CLOSED)
+  message     String?
+  breakUntil  DateTime?
+  autoCloseAt DateTime?
+  updatedAt   DateTime    @updatedAt
+}
+
+model StoreCredential {
+  id      String @id @default(cuid())
+  placeId String @unique
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  pinHash String
+}
+
+model FerrySchedule {
+  id       String  @id @default(cuid())
+  operator String
+  fromPort String
+  toPort   String
+  departHm String // "07:30"
+  arriveHm String // "08:05"
+  days     String  @default("[true,true,true,true,true,true,true]") // JSON配列 0=日〜6=土
+  note     String?
+}
+
+model ModelCourse {
+  id            String  @id @default(cuid())
+  slug          String  @unique
+  theme         String
+  titleJa       String
+  titleEn       String?
+  descriptionJa String?
+  descriptionEn String?
+  durationMin   Int
+  stops         String  @default("[]") // [{placeSlug,order,noteJa,noteEn}] の JSON
+}
+
+model Notice {
+  id       String    @id @default(cuid())
+  bodyJa   String
+  bodyEn   String?
+  level    String    @default("info") // info | warning
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+}

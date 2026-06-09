@@ -1,0 +1,107 @@
+{
+  "common": {
+    "appName": "家島丸ごと観光ナビ",
+    "openNow": "いま開いている",
+    "closed": "休業",
+    "break": "休憩中",
+    "loading": "読み込み中...",
+    "offline": "オフライン（最終取得データを表示中）",
+    "switchLang": "English",
+    "home": "ホーム",
+    "places": "スポット",
+    "map": "地図",
+    "ferry": "船",
+    "courses": "コース",
+    "storeLogin": "店舗管理"
+  },
+  "home": {
+    "title": "家島丸ごと観光ナビ",
+    "subtitle": "家島諸島をスマホ1枚で満喫",
+    "openPlaces": "いま開いているお店",
+    "morning": "朝の家島",
+    "afternoon": "昼の家島",
+    "evening": "夕暮れの家島",
+    "morningTip": "港周辺を散歩しながら、朝のコーヒーはいかがですか。",
+    "afternoonTip": "お昼は地元の魚介料理をぜひ。徒歩で島をぐるっと回れます。",
+    "eveningTip": "夕日スポットへ急ごう。最終便の時間も忘れずに。",
+    "viewAll": "すべて見る",
+    "navMap": "地図で見る",
+    "navFerry": "船時刻",
+    "navCourses": "モデルコース"
+  },
+  "places": {
+    "title": "スポット一覧",
+    "filterOpenNow": "いま開いている店だけ",
+    "categories": {
+      "RESTAURANT": "飲食",
+      "CAFE": "カフェ",
+      "SHOP": "買う",
+      "SIGHT": "観光",
+      "LODGING": "泊まる",
+      "ONSEN": "温泉",
+      "TOILET": "トイレ",
+      "PORT": "港",
+      "OTHER": "その他"
+    },
+    "walkMinutes": "徒歩約{min}分",
+    "todayHours": "本日の営業時間",
+    "closed": "本日休業",
+    "noHours": "営業時間不明",
+    "viewOnMap": "地図で見る",
+    "relatedCourses": "このスポットを含むコース"
+  },
+  "ferry": {
+    "title": "船の時刻表",
+    "today": "本日（{day}）",
+    "next": "次の便",
+    "last": "最終便",
+    "depart": "出発",
+    "arrive": "到着",
+    "from": "から",
+    "to": "へ",
+    "minutesLeft": "あと{min}分",
+    "urgent": "急いで！",
+    "noBoat": "本日の便はありません",
+    "allBoatsDone": "本日の最終便は終了しました",
+    "planTitle": "逆算プラン",
+    "planDesc": "最終便から逆算して{port}を出発する時間"
+  },
+  "courses": {
+    "title": "モデルコース",
+    "duration": "所要{min}分",
+    "stops": "スポット"
+  },
+  "store": {
+    "loginTitle": "店舗管理ログイン",
+    "selectPlace": "お店を選んでください",
+    "pin": "PIN（数字のみ）",
+    "login": "ログイン",
+    "loginFail": "PINが違います",
+    "loginLocked": "しばらく時間をおいて再試行してください",
+    "dashTitle": "営業状況",
+    "openAction": "営業中にする",
+    "closeAction": "今日はもう閉める",
+    "breakAction": "休憩中（30分）",
+    "message": "一言メッセージ（任意）",
+    "messagePlaceholder": "例：本日売り切れ",
+    "logout": "ログアウト",
+    "currentOpen": "営業中",
+    "currentClosed": "休業",
+    "currentBreak": "休憩中",
+    "autoCloseAt": "自動閉店: {time}"
+  },
+  "lastBoat": {
+    "label": "最終便まで",
+    "urgent": "急いで！最終便まで{min}分",
+    "normal": "最終便 {time}発 まであと{min}分",
+    "done": "本日の最終便は終了しました"
+  },
+  "sun": {
+    "sunset": "日の入り {time}",
+    "goldenHour": "夕景ベストタイム"
+  },
+  "notice": {
+    "info": "お知らせ",
+    "warning": "重要"
+  }
+}

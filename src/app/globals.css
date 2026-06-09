@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Colors ─────────────────────────────────── */
+  --color-paper:       #F5F2EB;
+  --color-surface:     #FCFAF6;
+  --color-surface-alt: #FBF8F1;
+  --color-ink:         #262320;
+  --color-ink-soft:    #7A746B;
+  --color-ink-faint:   #8A8276;
+  --color-line:        #E5DFD3;
+  --color-line-strong: #DDD5C6;
+  --color-sea:         #4F6E78;
+  --color-sea-deep:    #36525B;
+  --color-clay:        #A8835A;
+  --color-sage:        #5E7E63;
+  --color-tint-slate:  #6E8A92;
+  --color-tint-clay:   #B0937E;
+
+  /* ── Typography ──────────────────────────────── */
+  --font-sans:   var(--font-zen-kaku), 'Zen Kaku Gothic New', sans-serif;
+  --font-serif:  var(--font-shippori), 'Shippori Mincho', serif;
+}
+
+/* Fixed light theme — no dark mode */
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: #F5F2EB;
+  color: #262320;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid #4F6E78;
+  outline-offset: 2px;
+}
+
+/* Hairline helper */
+.hairline {
+  border-bottom: 1px solid #E5DFD3;
+}

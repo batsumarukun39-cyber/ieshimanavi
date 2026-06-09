@@ -1,0 +1,107 @@
+{
+  "common": {
+    "appName": "Ieshima Island Guide",
+    "openNow": "Open Now",
+    "closed": "Closed",
+    "break": "On Break",
+    "loading": "Loading...",
+    "offline": "Offline (showing last cached data)",
+    "switchLang": "日本語",
+    "home": "Home",
+    "places": "Places",
+    "map": "Map",
+    "ferry": "Ferry",
+    "courses": "Courses",
+    "storeLogin": "Store Admin"
+  },
+  "home": {
+    "title": "Ieshima Island Guide",
+    "subtitle": "Explore Ieshima Islands on your phone",
+    "openPlaces": "Open Now",
+    "morning": "Morning on Ieshima",
+    "afternoon": "Afternoon on Ieshima",
+    "evening": "Evening on Ieshima",
+    "morningTip": "Take a morning stroll around the port and grab a coffee.",
+    "afternoonTip": "Enjoy fresh local seafood for lunch. The island is walkable.",
+    "eveningTip": "Head to a sunset spot — and don't miss the last ferry!",
+    "viewAll": "View All",
+    "navMap": "Map",
+    "navFerry": "Ferry",
+    "navCourses": "Courses"
+  },
+  "places": {
+    "title": "Places",
+    "filterOpenNow": "Open now only",
+    "categories": {
+      "RESTAURANT": "Restaurant",
+      "CAFE": "Cafe",
+      "SHOP": "Shop",
+      "SIGHT": "Sightseeing",
+      "LODGING": "Stay",
+      "ONSEN": "Hot Spring",
+      "TOILET": "Restroom",
+      "PORT": "Port",
+      "OTHER": "Other"
+    },
+    "walkMinutes": "~{min} min walk",
+    "todayHours": "Today's Hours",
+    "closed": "Closed Today",
+    "noHours": "Hours unknown",
+    "viewOnMap": "View on Map",
+    "relatedCourses": "Courses including this place"
+  },
+  "ferry": {
+    "title": "Ferry Schedule",
+    "today": "Today ({day})",
+    "next": "Next Boat",
+    "last": "Last Boat",
+    "depart": "Depart",
+    "arrive": "Arrive",
+    "from": "from",
+    "to": "to",
+    "minutesLeft": "{min} min left",
+    "urgent": "Hurry!",
+    "noBoat": "No ferries today",
+    "allBoatsDone": "Last ferry has departed",
+    "planTitle": "Reverse Plan",
+    "planDesc": "Based on the last ferry, leave {port} by:"
+  },
+  "courses": {
+    "title": "Model Courses",
+    "duration": "{min} min",
+    "stops": "stops"
+  },
+  "store": {
+    "loginTitle": "Store Login",
+    "selectPlace": "Select your store",
+    "pin": "PIN (numbers only)",
+    "login": "Login",
+    "loginFail": "Incorrect PIN",
+    "loginLocked": "Too many attempts. Please try again later.",
+    "dashTitle": "Store Status",
+    "openAction": "Open for Business",
+    "closeAction": "Close for Today",
+    "breakAction": "Break (30 min)",
+    "message": "Optional message",
+    "messagePlaceholder": "e.g. Sold out today",
+    "logout": "Logout",
+    "currentOpen": "Open",
+    "currentClosed": "Closed",
+    "currentBreak": "On Break",
+    "autoCloseAt": "Auto-close at {time}"
+  },
+  "lastBoat": {
+    "label": "Last ferry",
+    "urgent": "Hurry! Last ferry in {min} min",
+    "normal": "Last ferry at {time} — {min} min left",
+    "done": "Last ferry has departed"
+  },
+  "sun": {
+    "sunset": "Sunset {time}",
+    "goldenHour": "Best viewing time"
+  },
+  "notice": {
+    "info": "Notice",
+    "warning": "Important"
+  }
+}
