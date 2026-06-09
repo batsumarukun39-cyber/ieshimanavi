@@ -1,148 +1,57 @@
-// ⚠️ サンプルデータです。実在の店舗情報・座標・船時刻は未確認のため、
-//    公開前に必ず家島の関係者（いえしまコンシェルジュ、姫路市、各店舗等）へ
-//    確認のうえ実データへ差し替えてください。
+// 実データ（家島情報.xlsx より変換）
+// ⚠️ 座標は暫定値です。実際の位置を地図で確認の上、修正してください。
+// ⚠️ 店舗の PIN はデプロイ後に各店舗ごとに変更してください（初期値: 1234）。
 
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
+const ALL_DAYS = JSON.stringify([true, true, true, true, true, true, true]);
+
+// "11:00~14:00　17:00~21:00" + 定休曜日 → openingHours JSON
+// closedDays: 0=日, 1=月, ..., 6=土
+function buildHours(
+  timeStr: string | null,
+  closedDays: number[]
+): Record<string, Array<{ open: string; close: string }>> {
+  const result: Record<string, Array<{ open: string; close: string }>> = {};
+  for (let d = 0; d <= 6; d++) {
+    if (closedDays.includes(d) || !timeStr) {
+      result[String(d)] = [];
+    } else {
+      const slots = timeStr
+        .split(/[\s　]+/)
+        .filter((s) => s.includes("~"))
+        .map((slot) => {
+          const [open, close] = slot.split("~");
+          return {
+            open: open.trim().padStart(5, "0"),
+            close: close.trim().padStart(5, "0"),
+          };
+        });
+      result[String(d)] = slots;
+    }
+  }
+  return result;
+}
+
 async function main() {
   console.log("🌱 Seeding database...");
 
   // --- Places ---
-  // ⚠️ 仮の店舗情報・座標・営業時間。要差し替え。
   const placesData = [
+    // ── 真浦エリア ──────────────────────────────────────────
     {
-      slug: "sample-cafe-umi",
-      category: "CAFE" as const,
-      nameJa: "（サンプル）海のみえるカフェ",
-      nameEn: "(Sample) Seaside Cafe",
-      descriptionJa: "港を見渡せる絶景カフェです。コーヒーと地元のお菓子が人気。",
-      descriptionEn: "A cafe with a view of the port. Known for coffee and local sweets.",
-      lat: 34.6835,
-      lng: 134.5305,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
-      openingHours: JSON.stringify({
-        "1": [{ open: "10:00", close: "16:00" }],
-        "2": [{ open: "10:00", close: "16:00" }],
-        "3": [{ open: "10:00", close: "16:00" }],
-        "4": [{ open: "10:00", close: "16:00" }],
-        "5": [{ open: "10:00", close: "16:00" }],
-        "6": [{ open: "10:00", close: "16:00" }],
-        "0": [],
-      }),
-      hasStatus: true,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-restaurant-gyoko",
-      category: "RESTAURANT" as const,
-      nameJa: "（サンプル）漁港食堂",
-      nameEn: "(Sample) Fishing Port Diner",
-      descriptionJa: "地元の漁師が営む食堂。新鮮な魚介料理が自慢。",
-      descriptionEn: "A diner run by local fishermen, serving fresh seafood.",
-      lat: 34.6830,
-      lng: 134.5298,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
-      openingHours: JSON.stringify({
-        "1": [{ open: "11:00", close: "14:00" }],
-        "2": [{ open: "11:00", close: "14:00" }],
-        "3": [{ open: "11:00", close: "14:00" }],
-        "4": [{ open: "11:00", close: "14:00" }],
-        "5": [{ open: "11:00", close: "14:00" }],
-        "6": [{ open: "11:00", close: "14:00" }],
-        "0": [],
-      }),
-      hasStatus: true,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-shop-miyage",
-      category: "SHOP" as const,
-      nameJa: "（サンプル）島のみやげ屋",
-      nameEn: "(Sample) Island Souvenir Shop",
-      descriptionJa: "家島の特産品・干物・加工品などを販売。",
-      descriptionEn: "Local specialties, dried fish, and island products.",
-      lat: 34.6828,
-      lng: 134.5310,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
-      openingHours: JSON.stringify({
-        "1": [{ open: "09:00", close: "17:00" }],
-        "2": [{ open: "09:00", close: "17:00" }],
-        "3": [{ open: "09:00", close: "17:00" }],
-        "4": [{ open: "09:00", close: "17:00" }],
-        "5": [{ open: "09:00", close: "17:00" }],
-        "6": [{ open: "09:00", close: "17:00" }],
-        "0": [{ open: "09:00", close: "12:00" }],
-      }),
-      hasStatus: true,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-sight-manyou",
-      category: "SIGHT" as const,
-      nameJa: "（サンプル）万葉の丘",
-      nameEn: "(Sample) Manyou Hill",
-      descriptionJa: "万葉集にも詠まれた歴史ある丘。島を一望できる絶景スポット。",
-      descriptionEn: "A historic hill mentioned in the Manyoshu poetry anthology, with panoramic views.",
-      lat: 34.6855,
-      lng: 134.5320,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
-      openingHours: JSON.stringify({}),
-      hasStatus: false,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-sight-sunset",
-      category: "SIGHT" as const,
-      nameJa: "（サンプル）夕日ヶ浜",
-      nameEn: "(Sample) Sunset Beach",
-      descriptionJa: "夕暮れ時に美しい夕日が見られる浜辺。",
-      descriptionEn: "A beach with stunning sunset views in the evening.",
-      lat: 34.6820,
-      lng: 134.5280,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
-      openingHours: JSON.stringify({}),
-      hasStatus: false,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-toilet-port",
-      category: "TOILET" as const,
-      nameJa: "（サンプル）真浦港 公衆トイレ",
-      nameEn: "(Sample) Maura Port Restroom",
-      descriptionJa: "真浦港フェリーターミナル近くの公衆トイレ。",
-      descriptionEn: "Public restroom near the Maura Port ferry terminal.",
-      lat: 34.6825,
-      lng: 134.5295,
-      address: "兵庫県姫路市家島町（サンプル）",
-      phone: null,
-      photos: JSON.stringify([]),
-      openingHours: JSON.stringify({}),
-      hasStatus: false,
-      island: "家島本島",
-    },
-    {
-      slug: "sample-port-maura",
+      slug: "maura-port",
       category: "PORT" as const,
-      nameJa: "（サンプル）真浦港",
-      nameEn: "(Sample) Maura Port",
-      descriptionJa: "家島本島の主要港。姫路港からの高速船が発着する。",
+      nameJa: "真浦港",
+      nameEn: "Maura Port",
+      descriptionJa: "姫路からの高速船が発着する家島本島のメイン港。",
       descriptionEn: "The main port of Ieshima, served by high-speed ferries from Himeji.",
-      lat: 34.6823,
-      lng: 134.5293,
-      address: "兵庫県姫路市家島町（サンプル）",
+      lat: 34.6830,
+      lng: 134.5295,
+      address: "兵庫県姫路市家島町真浦",
       phone: null,
       photos: JSON.stringify([]),
       openingHours: JSON.stringify({}),
@@ -150,15 +59,208 @@ async function main() {
       island: "家島本島",
     },
     {
-      slug: "sample-lodging-minshuku",
+      slug: "yoraikyo",
+      category: "RESTAURANT" as const,
+      nameJa: "夜来香",
+      nameEn: "Yoraikyo",
+      descriptionJa: "家島真浦の中華料理店。昼・夜ともに営業。火曜定休。",
+      descriptionEn: "Chinese restaurant in Maura. Open lunch and dinner. Closed Tuesdays.",
+      lat: 34.6833,
+      lng: 134.5300,
+      address: "兵庫県姫路市家島町真浦2186",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify(buildHours("11:00~14:00　17:00~21:00", [2])),
+      hasStatus: true,
+      island: "家島本島",
+    },
+    {
+      slug: "okabe",
       category: "LODGING" as const,
-      nameJa: "（サンプル）民宿 島の宿",
-      nameEn: "(Sample) Guesthouse Shima-no-yado",
-      descriptionJa: "島の自然に囲まれた民宿。地元料理の夕食が好評。",
-      descriptionEn: "A cozy guesthouse surrounded by island nature, with a popular local dinner.",
+      nameJa: "料理旅館おかべ",
+      nameEn: "Ryokan Okabe",
+      descriptionJa: "家島真浦の料理旅館。新鮮な魚料理が自慢。",
+      descriptionEn: "A traditional inn with fresh seafood cuisine in Maura.",
+      lat: 34.6836,
+      lng: 134.5308,
+      address: "兵庫県姫路市家島町真浦2421",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "ange",
+      category: "CAFE" as const,
+      nameJa: "ANGE",
+      nameEn: "ANGE",
+      descriptionJa: "家島真浦の軽食カフェ。",
+      descriptionEn: "Light food cafe in Maura.",
+      lat: 34.6835,
+      lng: 134.5306,
+      address: "兵庫県姫路市家島町真浦2380",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "porto",
+      category: "CAFE" as const,
+      nameJa: "海の見えるカフェPORTO",
+      nameEn: "Cafe PORTO",
+      descriptionJa: "海を一望できる絶景カフェ。コーヒーと魚料理が人気。月曜定休。",
+      descriptionEn: "Seaside cafe with ocean views. Known for coffee and seafood. Closed Mondays.",
       lat: 34.6840,
-      lng: 134.5315,
-      address: "兵庫県姫路市家島町（サンプル）",
+      lng: 134.5290,
+      address: "兵庫県姫路市家島町真浦672",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify(buildHours("9:00~10:30　11:00~14:00", [1])),
+      hasStatus: true,
+      island: "家島本島",
+    },
+    {
+      slug: "dairitsu",
+      category: "LODGING" as const,
+      nameJa: "大立旅館",
+      nameEn: "Dairitsu Ryokan",
+      descriptionJa: "家島真浦の旅館。",
+      descriptionEn: "A traditional inn in Maura.",
+      lat: 34.6838,
+      lng: 134.5288,
+      address: "兵庫県姫路市家島町真浦522-34",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "demise",
+      category: "RESTAURANT" as const,
+      nameJa: "でみせ",
+      nameEn: "Demise",
+      descriptionJa: "家島真浦の焼肉店。昼・夜ともに営業。月曜定休。",
+      descriptionEn: "Yakiniku BBQ restaurant in Maura. Open lunch and dinner. Closed Mondays.",
+      lat: 34.6839,
+      lng: 134.5289,
+      address: "兵庫県姫路市家島町真浦622",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify(buildHours("12:00~13:30　17:00~22:00", [1])),
+      hasStatus: true,
+      island: "家島本島",
+    },
+    // ── 宮エリア ──────────────────────────────────────────
+    {
+      slug: "miya-port",
+      category: "PORT" as const,
+      nameJa: "宮港",
+      nameEn: "Miya Port",
+      descriptionJa: "家島本島の宮地区にある港。家島神社・清水公園へのアクセス拠点。",
+      descriptionEn: "Port in the Miya area, gateway to Ieshima Shrine and Shimizu Park.",
+      lat: 34.6822,
+      lng: 134.5235,
+      address: "兵庫県姫路市家島町宮",
+      phone: null,
+      photos: JSON.stringify([]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "umeusagi",
+      category: "SHOP" as const,
+      nameJa: "うめうさぎ",
+      nameEn: "Umeusagi",
+      descriptionJa: "宮の惣菜・お弁当店。島の食材を使った手作り弁当が人気。水・木・金定休。",
+      descriptionEn: "Deli and bento shop in Miya. Homemade bentos with island ingredients. Closed Wed-Fri.",
+      lat: 34.6815,
+      lng: 134.5235,
+      address: "兵庫県姫路市家島町宮1069",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify(buildHours("11:30~17:00", [3, 4, 5])),
+      hasStatus: true,
+      island: "家島本島",
+    },
+    {
+      slug: "maami",
+      category: "CAFE" as const,
+      nameJa: "工場カフェ まあみい",
+      nameEn: "Kouba Cafe Maami",
+      descriptionJa: "宮の工場を改装したカフェ。魚料理も提供。月〜木定休。",
+      descriptionEn: "Cafe in a converted factory in Miya. Also serves seafood. Closed Mon-Thu.",
+      lat: 34.6820,
+      lng: 134.5240,
+      address: "兵庫県姫路市家島町宮48-1",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "shimizu-shokudo",
+      category: "RESTAURANT" as const,
+      nameJa: "志みず",
+      nameEn: "Shimizu",
+      descriptionJa: "宮の魚料理店。新鮮な地元の魚介を提供。",
+      descriptionEn: "Seafood restaurant in Miya, serving fresh local fish.",
+      lat: 34.6818,
+      lng: 134.5238,
+      address: "兵庫県姫路市家島町宮85",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "ieshima-jinja",
+      category: "SIGHT" as const,
+      nameJa: "家島神社",
+      nameEn: "Ieshima Shrine",
+      descriptionJa: "家島の鎮守の神社。宮エリアに鎮座し、島民の信仰を集める歴史ある神社。",
+      descriptionEn: "The guardian shrine of Ieshima, a historic shrine in the Miya area.",
+      lat: 34.6810,
+      lng: 134.5225,
+      address: "兵庫県姫路市家島町宮1",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "shimizu-park",
+      category: "SIGHT" as const,
+      nameJa: "清水公園",
+      nameEn: "Shimizu Park",
+      descriptionJa: "宮エリアにある公園。海を見渡せる景色が楽しめる。",
+      descriptionEn: "Park in the Miya area with views of the sea.",
+      lat: 34.6822,
+      lng: 134.5242,
+      address: "兵庫県姫路市家島宮50-6",
+      phone: null,
+      photos: JSON.stringify(["/images/places/placeholder.jpg"]),
+      openingHours: JSON.stringify({}),
+      hasStatus: false,
+      island: "家島本島",
+    },
+    {
+      slug: "shimizu-beach",
+      category: "SIGHT" as const,
+      nameJa: "清水の浜海水浴場",
+      nameEn: "Shimizu Beach",
+      descriptionJa: "宮エリアの海水浴場。夏には多くの海水浴客で賑わう透明度の高い砂浜。",
+      descriptionEn: "Clear-water swimming beach in Miya, popular in summer.",
+      lat: 34.6808,
+      lng: 134.5232,
+      address: "兵庫県姫路市家島町宮",
       phone: null,
       photos: JSON.stringify(["/images/places/placeholder.jpg"]),
       openingHours: JSON.stringify({}),
@@ -178,8 +280,8 @@ async function main() {
     console.log(`  ✓ Place: ${place.nameJa}`);
   }
 
-  // --- StoreStatus & StoreCredential for hasStatus=true places ---
-  // ⚠️ サンプルPIN "1234" を使用。公開前に必ず変更してください。
+  // --- StoreStatus & StoreCredential ---
+  // ⚠️ 初期 PIN "1234"。公開前に各店舗へ個別 PIN をお知らせし変更してください。
   const samplePin = "1234";
   const pinHash = await bcrypt.hash(samplePin, 10);
 
@@ -191,10 +293,7 @@ async function main() {
     await prisma.storeStatus.upsert({
       where: { placeId: place.id },
       update: {},
-      create: {
-        placeId: place.id,
-        state: "CLOSED",
-      },
+      create: { placeId: place.id, state: "CLOSED" },
     });
     await prisma.storeCredential.upsert({
       where: { placeId: place.id },
@@ -204,57 +303,102 @@ async function main() {
     console.log(`  ✓ Credential: ${place.nameJa} (PIN: ${samplePin})`);
   }
 
-  // --- FerrySchedule ---
-  // ⚠️ 仮の時刻・運航会社名。要差し替え。
+  // --- FerrySchedule（家島汽船 実時刻）---
+  await prisma.ferrySchedule.deleteMany();
+
   const ferryData = [
-    // 姫路→家島(真浦) 往路
-    { operator: "（サンプル）高速船", fromPort: "姫路港", toPort: "家島(真浦)", departHm: "07:30", arriveHm: "08:05", days: JSON.stringify([true, true, true, true, true, true, true]) },
-    { operator: "（サンプル）高速船", fromPort: "姫路港", toPort: "家島(真浦)", departHm: "10:00", arriveHm: "10:35", days: JSON.stringify([true, true, true, true, true, true, true]) },
-    { operator: "（サンプル）高速船", fromPort: "姫路港", toPort: "家島(真浦)", departHm: "14:30", arriveHm: "15:05", days: JSON.stringify([true, true, true, true, true, true, true]) },
-    // 家島(真浦)→姫路 復路
-    { operator: "（サンプル）高速船", fromPort: "家島(真浦)", toPort: "姫路港", departHm: "09:00", arriveHm: "09:35", days: JSON.stringify([true, true, true, true, true, true, true]) },
-    { operator: "（サンプル）高速船", fromPort: "家島(真浦)", toPort: "姫路港", departHm: "13:00", arriveHm: "13:35", days: JSON.stringify([true, true, true, true, true, true, true]) },
-    { operator: "（サンプル）高速船", fromPort: "家島(真浦)", toPort: "姫路港", departHm: "17:00", arriveHm: "17:35", days: JSON.stringify([true, true, true, true, true, true, true]) },
+    // ── 姫路港 → 真浦港 ──────────────────────────────────
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "06:55", arriveHm: "07:22", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "07:10", arriveHm: "07:45", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "08:18", arriveHm: "08:45", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "09:10", arriveHm: "09:37", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "10:00", arriveHm: "10:27", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "11:40", arriveHm: "12:15", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "13:40", arriveHm: "14:07", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "15:30", arriveHm: "15:57", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "16:30", arriveHm: "16:57", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "17:10", arriveHm: "17:50", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "18:15", arriveHm: "18:42", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "19:00", arriveHm: "19:27", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "19:55", arriveHm: "20:22", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "姫路港", toPort: "真浦港", departHm: "20:35", arriveHm: "21:10", days: ALL_DAYS, note: null },
+    // ── 真浦港 → 宮港（真浦に寄港後、宮まで続行する便）──────
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "07:25", arriveHm: "07:28", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "08:50", arriveHm: "08:53", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "09:40", arriveHm: "09:45", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "10:32", arriveHm: "10:35", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "14:10", arriveHm: "14:13", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "16:10", arriveHm: "16:15", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "17:02", arriveHm: "17:05", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "18:47", arriveHm: "18:50", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "19:30", arriveHm: "19:35", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "宮港", departHm: "20:27", arriveHm: "20:30", days: ALL_DAYS, note: null },
+    // ── 宮港 → 真浦港（復路）────────────────────────────
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "06:00", arriveHm: "06:03", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "06:20", arriveHm: "06:25", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "07:31", arriveHm: "07:34", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "08:05", arriveHm: "08:10", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "09:02", arriveHm: "09:05", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "10:50", arriveHm: "10:55", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "12:50", arriveHm: "12:53", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "14:20", arriveHm: "14:25", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "15:35", arriveHm: "15:38", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "17:45", arriveHm: "17:50", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "宮港", toPort: "真浦港", departHm: "19:00", arriveHm: "19:03", days: ALL_DAYS, note: null },
+    // ── 真浦港 → 姫路港（復路）────────────────────────────
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "06:10", arriveHm: "06:37", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "06:33", arriveHm: "07:00", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "07:37", arriveHm: "08:04", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "08:18", arriveHm: "08:45", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "09:10", arriveHm: "09:37", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "11:00", arriveHm: "11:27", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "13:00", arriveHm: "13:27", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "14:33", arriveHm: "15:00", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "15:45", arriveHm: "16:12", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "16:10", arriveHm: "16:52", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "17:25", arriveHm: "18:00", days: ALL_DAYS, note: null },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "18:00", arriveHm: "18:27", days: ALL_DAYS, note: "中型船" },
+    { operator: "家島汽船", fromPort: "真浦港", toPort: "姫路港", departHm: "19:10", arriveHm: "19:37", days: ALL_DAYS, note: null },
+    // ── 宮港 → 姫路港（真浦未停車）─────────────────────────
+    { operator: "家島汽船", fromPort: "宮港", toPort: "姫路港", departHm: "20:00", arriveHm: "20:27", days: ALL_DAYS, note: null },
   ];
 
-  await prisma.ferrySchedule.deleteMany();
   for (const ferry of ferryData) {
     await prisma.ferrySchedule.create({ data: ferry });
   }
   console.log(`  ✓ Ferry: ${ferryData.length} schedules`);
 
   // --- ModelCourse ---
-  // ⚠️ 仮のコース。要差し替え。
   const coursesData = [
     {
-      slug: "course-manyou",
-      theme: "万葉",
-      titleJa: "（サンプル）万葉の足跡をたどる半日コース",
-      titleEn: "(Sample) Half-Day Manyoshu Heritage Walk",
-      descriptionJa: "古代の詩歌に詠まれた島の風景を歩きながら体感する約2時間のコース。",
-      descriptionEn: "A 2-hour walk through scenery celebrated in ancient Japanese poetry.",
-      durationMin: 120,
+      slug: "course-maura",
+      theme: "散策",
+      titleJa: "真浦エリア半日さんぽコース",
+      titleEn: "Half-Day Maura Walk",
+      descriptionJa: "真浦港から島の路地を歩き、カフェやグルメを楽しむ約3時間のコース。",
+      descriptionEn: "A 3-hour stroll through Maura's lanes, ending with cafe and dining.",
+      durationMin: 180,
       stops: JSON.stringify([
-        { placeSlug: "sample-port-maura", order: 1, noteJa: "真浦港からスタート", noteEn: "Start at Maura Port" },
-        { placeSlug: "sample-sight-manyou", order: 2, noteJa: "万葉の丘へ登る（徒歩20分）", noteEn: "Climb Manyou Hill (20 min walk)" },
-        { placeSlug: "sample-cafe-umi", order: 3, noteJa: "カフェで休憩", noteEn: "Coffee break at seaside cafe" },
-        { placeSlug: "sample-port-maura", order: 4, noteJa: "港へ戻る", noteEn: "Return to port" },
+        { placeSlug: "maura-port", order: 1, noteJa: "真浦港に到着", noteEn: "Arrive at Maura Port" },
+        { placeSlug: "porto", order: 2, noteJa: "PORTOで朝のコーヒー（9:00〜）", noteEn: "Morning coffee at PORTO (from 9:00)" },
+        { placeSlug: "yoraikyo", order: 3, noteJa: "夜来香でランチ（11:00〜）", noteEn: "Lunch at Yoraikyo (from 11:00)" },
+        { placeSlug: "maura-port", order: 4, noteJa: "真浦港から帰路", noteEn: "Return from Maura Port" },
       ]),
     },
     {
-      slug: "course-gourmet",
-      theme: "グルメ",
-      titleJa: "（サンプル）島のグルメと夕日コース",
-      titleEn: "(Sample) Island Gourmet & Sunset Tour",
-      descriptionJa: "新鮮な海の幸ランチから夕日の絶景まで、島の魅力を凝縮した半日コース。",
-      descriptionEn: "From fresh seafood lunch to breathtaking sunset views.",
-      durationMin: 150,
+      slug: "course-miya",
+      theme: "観光",
+      titleJa: "宮エリア観光コース",
+      titleEn: "Miya Area Sightseeing",
+      descriptionJa: "宮港から家島神社・清水の浜を巡り、島グルメで締めくくる約3時間のコース。",
+      descriptionEn: "Visit Ieshima Shrine and Shimizu Beach from Miya Port, then enjoy island food.",
+      durationMin: 180,
       stops: JSON.stringify([
-        { placeSlug: "sample-port-maura", order: 1, noteJa: "真浦港から出発", noteEn: "Depart from Maura Port" },
-        { placeSlug: "sample-restaurant-gyoko", order: 2, noteJa: "漁港食堂でランチ", noteEn: "Lunch at the fishing port diner" },
-        { placeSlug: "sample-shop-miyage", order: 3, noteJa: "お土産を買う", noteEn: "Pick up souvenirs" },
-        { placeSlug: "sample-sight-sunset", order: 4, noteJa: "夕日ヶ浜で夕日を見る", noteEn: "Watch the sunset at Sunset Beach" },
-        { placeSlug: "sample-port-maura", order: 5, noteJa: "最終便で帰宅", noteEn: "Catch the last ferry home" },
+        { placeSlug: "miya-port", order: 1, noteJa: "宮港に到着", noteEn: "Arrive at Miya Port" },
+        { placeSlug: "ieshima-jinja", order: 2, noteJa: "家島神社を参拝", noteEn: "Visit Ieshima Shrine" },
+        { placeSlug: "shimizu-beach", order: 3, noteJa: "清水の浜で海を満喫", noteEn: "Enjoy the sea at Shimizu Beach" },
+        { placeSlug: "umeusagi", order: 4, noteJa: "うめうさぎでお弁当を購入（〜17:00）", noteEn: "Pick up a bento at Umeusagi (until 17:00)" },
+        { placeSlug: "miya-port", order: 5, noteJa: "宮港から帰路", noteEn: "Return from Miya Port" },
       ]),
     },
   ];
@@ -269,17 +413,7 @@ async function main() {
   }
 
   // --- Notice ---
-  // ⚠️ サンプルのお知らせ。要差し替え。
   await prisma.notice.deleteMany();
-  await prisma.notice.create({
-    data: {
-      bodyJa: "【サンプル】このサイトはサンプルデータで動作しています。公開前に実データへ差し替えてください。",
-      bodyEn: "(Sample) This site is running on sample data. Please replace with real data before publishing.",
-      level: "warning",
-    },
-  });
-  console.log("  ✓ Notice: sample warning");
-
   console.log("✅ Seeding complete!");
 }
 
