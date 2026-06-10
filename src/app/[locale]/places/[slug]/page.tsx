@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { toPlaceWithStatus } from "@/lib/db";
 import { openNow as calcOpenNow } from "@/lib/openNow";
 import { parseOpeningHours } from "@/lib/json";
+import { dayOfWeekJST } from "@/lib/jst";
 import StatusBadge from "@/components/StatusBadge";
 import type { OpeningHours } from "@/types";
 
@@ -137,6 +138,6 @@ export default async function PlaceDetailPage({ params }: Props) {
 }
 
 function getTodaySlots(hours: OpeningHours) {
-  const day = new Date().getDay().toString();
+  const day = dayOfWeekJST(new Date()).toString();
   return hours[day] ?? [];
 }

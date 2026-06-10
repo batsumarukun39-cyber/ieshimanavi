@@ -1,16 +1,16 @@
 import type { FerryScheduleData } from "@/types";
+import { dayOfWeekJST, hmToDateJST } from "@/lib/jst";
 
 export type FerryDeparture = {
   schedule: FerryScheduleData;
   departureDate: Date;
 };
 
-/** "HH:MM" を当日の Date に変換 */
+export { dayOfWeekJST };
+
+/** "HH:MM" を JST 当日のその時刻を表す UTC Date に変換 */
 export function hmToDate(hm: string, baseDate: Date): Date {
-  const [h, m] = hm.split(":").map(Number);
-  const d = new Date(baseDate);
-  d.setHours(h, m, 0, 0);
-  return d;
+  return hmToDateJST(hm, baseDate);
 }
 
 /**

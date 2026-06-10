@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { toFerryScheduleData } from "@/lib/db";
-import { nextDepartures, lastBoatCountdown, planByDeadline, todaySchedules } from "@/lib/ferry";
+import { nextDepartures, lastBoatCountdown, planByDeadline, todaySchedules, dayOfWeekJST } from "@/lib/ferry";
 import type { FerryScheduleData } from "@/types";
 
 type Props = { params: Promise<{ locale: string }> };
@@ -20,7 +20,7 @@ export default async function FerryPage({ params }: Props) {
   const schedules: FerryScheduleData[] = raw.map(toFerryScheduleData);
 
   const now = new Date();
-  const dow = now.getDay();
+  const dow = dayOfWeekJST(now);
   const dayLabel = ja ? DAY_JA[dow] : DAY_EN[dow];
 
   const toIsland = schedules.filter((s) => s.toPort.includes("家島") || s.fromPort.includes("姫路"));

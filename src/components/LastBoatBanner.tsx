@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { nextDepartures, lastBoatCountdown } from "@/lib/ferry";
+import { nextDepartures, lastBoatCountdown, dayOfWeekJST } from "@/lib/ferry";
 import { IconShip } from "@tabler/icons-react";
 import type { FerryScheduleData } from "@/types";
 
@@ -22,10 +22,10 @@ export default function LastBoatBanner({ schedules, locale }: Props) {
   if (!now) return null;
 
   const ja = locale === "ja";
-  const dow = now.getDay();
+  const dow = dayOfWeekJST(now);
 
   const returnSchedules = schedules.filter(
-    (s) => s.fromPort.includes("家島") || s.toPort.includes("姫路")
+    (s) => s.toPort.includes("姫路")
   );
   const { last } = nextDepartures(
     returnSchedules.length > 0 ? returnSchedules : schedules,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifySessionValue, SESSION_COOKIE } from "@/lib/auth";
 import { parseOpeningHours } from "@/lib/json";
+import { dayOfWeekJST, hmToDateJST } from "@/lib/jst";
 import type { StatusState } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
@@ -35,15 +36,12 @@ export async function POST(req: NextRequest) {
     const place = await prisma.place.findUnique({ where: { id: placeId } });
     if (place) {
       const hours = parseOpeningHours(place.openingHours);
-      const day = now.getDay().toString();
+      const day = dayOfWeekJST(now).toString();
       const slots = hours[day] ?? [];
       const closeHm = slots[0]?.close ?? "19:00";
-      const [h, m] = closeHm.split(":").map(Number);
-      autoCloseAt = new Date(now);
-      autoCloseAt.setHours(h, m, 0, 0);
+      autoCloseAt = hmToDateJST(closeHm, now);
       if (autoCloseAt <= now) {
-        // 既に過ぎていれば翌日の同時刻（念のため）
-        autoCloseAt.setDate(autoCloseAt.getDate() + 1);
+        autoCloseAt = new Date(autoCloseAt.getTime() + 86400000);
       }
     }
   }

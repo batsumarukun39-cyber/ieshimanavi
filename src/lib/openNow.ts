@@ -1,5 +1,6 @@
 import type { StoreStatus } from "@prisma/client";
 import type { OpeningHours, OpeningHourSlot } from "@/types";
+import { dayOfWeekJST, nowHHMMJST } from "@/lib/jst";
 
 type StatusLike = Pick<
   StoreStatus,
@@ -34,17 +35,11 @@ export function openNow(
     }
   }
 
-  // openingHours による判定
-  const day = now.getDay().toString(); // "0"=日 〜 "6"=土
+  // openingHours による判定（JST で曜日・時刻を判定）
+  const day = dayOfWeekJST(now).toString();
   const slots: OpeningHourSlot[] = openingHours[day] ?? [];
   if (slots.length === 0) return false;
 
-  const hhmm = toHHMM(now);
+  const hhmm = nowHHMMJST(now);
   return slots.some((s) => hhmm >= s.open && hhmm < s.close);
-}
-
-function toHHMM(d: Date): string {
-  const h = d.getHours().toString().padStart(2, "0");
-  const m = d.getMinutes().toString().padStart(2, "0");
-  return `${h}:${m}`;
 }
